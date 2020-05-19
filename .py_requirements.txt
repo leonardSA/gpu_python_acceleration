@@ -1,0 +1,8 @@
+appdirs==1.4.4
+decorator==4.4.2
+llvmlite==0.32.1
+numba==0.49.1
+numpy==1.18.4
+pyopencl==2020.1
+pytools==2020.2
+six==1.14.0
