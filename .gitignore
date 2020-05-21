@@ -1,2 +1,6 @@
 # Python virtual environment directory
 .environment
+
+# Vim
+*.swo
+*.swp
