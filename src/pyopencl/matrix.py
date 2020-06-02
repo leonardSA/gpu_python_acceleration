@@ -13,14 +13,15 @@ def matrix_mult_program(context):
                                   __global float* c,
                                   const unsigned int a_ncol,
                                   const unsigned int b_ncol) {
-            int gid = get_global_id(0);
-            c[gid] = 1;
+            int rows = get_global_id(0);    /* iterate over rows */
+            int columns = get_global_id(1); /* then iterate over columns */
+            c[rows * b_ncol + columns] = 1;
         }
     """
     return ocl.Program(context, program_source).build()
 
 
-def matrix_mult(a, b, c, a_col_size, b_col_size,
+def matrix_mult(a, b, c, a_dimensions, b_dimensions,
                 platform, devices, context, program, queue):
     # define buffers
     a_buffer = ocl.Buffer(context, flags=ocl.mem_flags.READ_ONLY,
@@ -29,23 +30,17 @@ def matrix_mult(a, b, c, a_col_size, b_col_size,
                           size=b.nbytes)
     c_buffer = ocl.Buffer(context, flags=ocl.mem_flags.WRITE_ONLY,
                           size=c.nbytes)
-    a_col_size_buffer = ocl.Buffer(context, flags=ocl.mem_flags.READ_ONLY,
-                                   size=a_col_size.nbytes)
-    b_col_size_buffer = ocl.Buffer(context, flags=ocl.mem_flags.READ_ONLY,
-                                   size=b_col_size.nbytes)
 
     # copying data onto GPU
     ocl.enqueue_copy(queue, src=a, dest=a_buffer)
     ocl.enqueue_copy(queue, src=b, dest=b_buffer)
-    ocl.enqueue_copy(queue, src=a_col_size, dest=a_col_size_buffer)
-    ocl.enqueue_copy(queue, src=b_col_size, dest=b_col_size_buffer)
 
     # running program
     kernel_arguments = (a_buffer, b_buffer, c_buffer,
-                        a_col_size_buffer, b_col_size_buffer)
+                        a_dimensions[1], b_dimensions[1])
     program.matrix_mult(queue,
-                        c.shape,  # global size
-                        None,     # local size
+                        np.array([a_dimensions[0], b_dimensions[1]]),
+                        None,
                         *kernel_arguments)
 
     # copying data off GPU
@@ -55,8 +50,8 @@ def matrix_mult(a, b, c, a_col_size, b_col_size,
 
 def main():
     # init matrixes as 1D arrays => opencl does not deal with 2D arrays
-    a_dimensions = (np.int32(2), np.int32(2))
-    b_dimensions = (np.int32(2), np.int32(2))
+    a_dimensions = (np.uint32(5), np.uint32(2))
+    b_dimensions = (np.uint32(2), np.uint32(6))
     assert(a_dimensions[1] == b_dimensions[0])
     a = np.random.rand(a_dimensions[0] * a_dimensions[1]).astype(np.float32)
     b = np.random.rand(b_dimensions[0] * b_dimensions[1]).astype(np.float32)
@@ -70,7 +65,7 @@ def main():
     queue = ocl.CommandQueue(context)
 
     # run program
-    matrix_mult(a, b, c, a_dimensions[1], b_dimensions[1],
+    matrix_mult(a, b, c, a_dimensions, b_dimensions,
                 platform, devices, context, program, queue)
     c.shape = (a_dimensions[0], b_dimensions[1])
     for i in c:
