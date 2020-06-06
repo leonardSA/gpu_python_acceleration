@@ -1,18 +1,55 @@
 import pyopencl as ocl
 import numpy as np
 import time
-import sys
+import argparse
 
 
-def argsCheck():
-    assert(len(sys.argv) == 5)
-    for i in range(1, len(sys.argv)):
-        for c in sys.argv[i]:
-            assert(c.isdigit())
+def positive_int(string):
+    value = int(string)
+    if value < 0:
+        raise argparse.ArgumentTypeError("Invalid {}".format(value))
+    return value
+
+
+def matmult_possible(a_columns, b_rows):
+    if a_columns != b_rows:
+        msg = "Cannot multiply matrices: {} != {}".format(a_columns, b_rows)
+        raise ValueError(msg)
+
+
+def args_parse():
+    parser = argparse.ArgumentParser(
+        description="Multiplication of two matrices.")
+    parser.add_argument("A_ROWS",
+                        type=positive_int,
+                        help="Number of rows of the first matrix")
+    parser.add_argument("A_COLUMNS",
+                        type=positive_int,
+                        help="Number of columns of the first matrix")
+    parser.add_argument("B_ROWS",
+                        type=positive_int,
+                        help="Number of rows of the second matrix")
+    parser.add_argument("B_COLUMNS",
+                        type=positive_int,
+                        help="Number of columns of the second matrix")
+    parser.add_argument('-t', "--time", action="store_true",
+                        help="""
+                        Prints out time measurements in the following order:
+                        copying buffers onto GPU, GPU computing time,
+                        copying buffers off GPU
+                        """)
+    parser.add_argument('-p', "--precision", action="store_true",
+                        help="""
+                        Measure floating point computed differences between
+                        numpy.matmult result and GPU operation printing:
+                        (LOW,HIGH)
+                        """)
+    args = parser.parse_args()
+    matmult_possible(args.A_COLUMNS, args.B_ROWS)
+    return args
 
 
 def interval(a, b):
-    assert(a.shape == b.shape)
     low = 0
     high = 0
     for i in range(0, len(a)):
@@ -48,7 +85,7 @@ def matrix_mult_program(context):
 
 
 def matrix_mult(a, b, c, a_dimensions, b_dimensions,
-                platform, devices, context, program, queue):
+                platform, devices, context, program, queue, args):
     # define buffers
     a_buffer = ocl.Buffer(context, flags=ocl.mem_flags.READ_ONLY,
                           size=a.nbytes)
@@ -64,34 +101,35 @@ def matrix_mult(a, b, c, a_dimensions, b_dimensions,
     copy_a_event.wait()
     copy_b_event.wait()
     end = time.time()
-    print(end - start)
+    if args.time:
+        print(end - start)
 
     # running program
     kernel_arguments = (a_buffer, b_buffer, c_buffer,
                         a_dimensions[1], b_dimensions[1])
 
-    # TODO time computation
     start = time.time()
     program.matrix_mult(queue,
                         np.array([a_dimensions[0], b_dimensions[1]]),
                         None,
                         *kernel_arguments).wait()
     end = time.time()
-    print(end - start)
+    if args.time:
+        print(end - start)
 
     # copying data off GPU
     start = time.time()
     ocl.enqueue_copy(queue, src=c_buffer, dest=c).wait()
     end = time.time()
-    print(end - start)
+    if args.time:
+        print(end - start)
 
 
 def main():
-    argsCheck()
-    # init matrixes as 1D arrays => opencl does not deal with 2D arrays
-    a_dimensions = (np.uint32(sys.argv[1]), np.uint32(sys.argv[2]))
-    b_dimensions = (np.uint32(sys.argv[3]), np.uint32(sys.argv[4]))
-    assert(a_dimensions[1] == b_dimensions[0])
+    args = args_parse()
+    # init matrices as 1D arrays => opencl does not deal with 2D arrays
+    a_dimensions = (np.uint32(args.A_ROWS), np.uint32(args.A_COLUMNS))
+    b_dimensions = (np.uint32(args.B_ROWS), np.uint32(args.B_COLUMNS))
     a = np.random.rand(a_dimensions[0] * a_dimensions[1]).astype(np.float32)
     b = np.random.rand(b_dimensions[0] * b_dimensions[1]).astype(np.float32)
     c = np.zeros(a_dimensions[0] * b_dimensions[1], dtype=np.float32)
@@ -105,16 +143,17 @@ def main():
 
     # run program
     matrix_mult(a, b, c, a_dimensions, b_dimensions,
-                platform, devices, context, program, queue)
+                platform, devices, context, program, queue, args)
     c.shape = (a_dimensions[0], b_dimensions[1])
 
     # verify output
-    a.shape = a_dimensions
-    b.shape = b_dimensions
-    c_expected = np.matmul(a, b)
-    precision = interval(c, c_expected)
-    if precision[0] != 0 or precision[1] != 0:
-        print("Floating points differences: ", precision)
+    if args.precision:
+        a.shape = a_dimensions
+        b.shape = b_dimensions
+        c_expected = np.matmul(a, b)
+        precision = interval(c, c_expected)
+        if precision[0] != 0 or precision[1] != 0:
+            print(precision)
 
 
 if __name__ == "__main__":
