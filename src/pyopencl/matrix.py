@@ -1,5 +1,6 @@
 import pyopencl as ocl
 import numpy as np
+import time
 import sys
 
 
@@ -48,7 +49,6 @@ def matrix_mult_program(context):
 
 def matrix_mult(a, b, c, a_dimensions, b_dimensions,
                 platform, devices, context, program, queue):
-    # TODO time transfer
     # define buffers
     a_buffer = ocl.Buffer(context, flags=ocl.mem_flags.READ_ONLY,
                           size=a.nbytes)
@@ -57,23 +57,33 @@ def matrix_mult(a, b, c, a_dimensions, b_dimensions,
     c_buffer = ocl.Buffer(context, flags=ocl.mem_flags.WRITE_ONLY,
                           size=c.nbytes)
 
+    start = time.time()
     # copying data onto GPU
-    ocl.enqueue_copy(queue, src=a, dest=a_buffer)
-    ocl.enqueue_copy(queue, src=b, dest=b_buffer)
+    copy_a_event = ocl.enqueue_copy(queue, src=a, dest=a_buffer)
+    copy_b_event = ocl.enqueue_copy(queue, src=b, dest=b_buffer)
+    copy_a_event.wait()
+    copy_b_event.wait()
+    end = time.time()
+    print(end - start)
 
     # running program
     kernel_arguments = (a_buffer, b_buffer, c_buffer,
                         a_dimensions[1], b_dimensions[1])
 
     # TODO time computation
+    start = time.time()
     program.matrix_mult(queue,
                         np.array([a_dimensions[0], b_dimensions[1]]),
                         None,
-                        *kernel_arguments)
+                        *kernel_arguments).wait()
+    end = time.time()
+    print(end - start)
 
     # copying data off GPU
-    copy_off_event = ocl.enqueue_copy(queue, src=c_buffer, dest=c)
-    copy_off_event.wait()
+    start = time.time()
+    ocl.enqueue_copy(queue, src=c_buffer, dest=c).wait()
+    end = time.time()
+    print(end - start)
 
 
 def main():
