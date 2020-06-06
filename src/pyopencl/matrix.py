@@ -11,7 +11,7 @@ def positive_int(string):
     return value
 
 
-def matmult_possible(a_columns, b_rows):
+def matmul_possible(a_columns, b_rows):
     if a_columns != b_rows:
         msg = "Cannot multiply matrices: {} != {}".format(a_columns, b_rows)
         raise ValueError(msg)
@@ -41,11 +41,15 @@ def args_parse():
     parser.add_argument('-p', "--precision", action="store_true",
                         help="""
                         Measure floating point computed differences between
-                        numpy.matmult result and GPU operation printing:
+                        numpy.matmul result and GPU operation printing:
                         (LOW,HIGH)
                         """)
+    parser.add_argument('-n', "--time-numpy-matmul", action="store_true",
+                        help="""
+                        Prints out time measurements for numpy.matmul
+                        """)
     args = parser.parse_args()
-    matmult_possible(args.A_COLUMNS, args.B_ROWS)
+    matmul_possible(args.A_COLUMNS, args.B_ROWS)
     return args
 
 
@@ -147,12 +151,16 @@ def main():
     c.shape = (a_dimensions[0], b_dimensions[1])
 
     # verify output
-    if args.precision:
+    if args.precision or args.time_numpy_matmul:
         a.shape = a_dimensions
         b.shape = b_dimensions
+        start = time.time()
         c_expected = np.matmul(a, b)
-        precision = interval(c, c_expected)
-        if precision[0] != 0 or precision[1] != 0:
+        end = time.time()
+        if args.time_numpy_matmul:
+            print(end - start)
+        if args.precision:
+            precision = interval(c, c_expected)
             print(precision)
 
 
