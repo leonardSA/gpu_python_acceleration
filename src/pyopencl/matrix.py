@@ -1,10 +1,13 @@
 import pyopencl as ocl
 import numpy as np
+import sys
 
-A_NCOL = 1e3      # Nb matrix columns
-A_NLIN = 1e3      # Nb matrix lines
-B_NCOL = 1e3
-B_NLIN = 1e3
+
+def argsCheck():
+    assert(len(sys.argv) == 5)
+    for i in range(1, len(sys.argv)):
+        for c in sys.argv[i]:
+            assert(c.isdigit())
 
 
 def interval(a, b):
@@ -74,9 +77,10 @@ def matrix_mult(a, b, c, a_dimensions, b_dimensions,
 
 
 def main():
+    argsCheck()
     # init matrixes as 1D arrays => opencl does not deal with 2D arrays
-    a_dimensions = (np.uint32(A_NLIN), np.uint32(A_NCOL))
-    b_dimensions = (np.uint32(B_NLIN), np.uint32(B_NCOL))
+    a_dimensions = (np.uint32(sys.argv[1]), np.uint32(sys.argv[2]))
+    b_dimensions = (np.uint32(sys.argv[3]), np.uint32(sys.argv[4]))
     assert(a_dimensions[1] == b_dimensions[0])
     a = np.random.rand(a_dimensions[0] * a_dimensions[1]).astype(np.float32)
     b = np.random.rand(b_dimensions[0] * b_dimensions[1]).astype(np.float32)
