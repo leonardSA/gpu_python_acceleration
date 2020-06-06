@@ -1,10 +1,24 @@
 import pyopencl as ocl
 import numpy as np
 
-A_NCOL = 1e2      # Nb matrix columns
-A_NLIN = 1e2      # Nb matrix lines
+A_NCOL = 1e3      # Nb matrix columns
+A_NLIN = 1e3      # Nb matrix lines
 B_NCOL = 1e3
-B_NLIN = 1e2
+B_NLIN = 1e3
+
+
+def interval(a, b):
+    assert(a.shape == b.shape)
+    low = 0
+    high = 0
+    for i in range(0, len(a)):
+        for j in range(0, len(a[i])):
+            diff = a[i][j] - b[i][j]
+            if diff > high:
+                high = diff
+            if diff < low:
+                low = diff
+    return (low, high)
 
 
 def matrix_mult_program(context):
@@ -84,9 +98,9 @@ def main():
     a.shape = a_dimensions
     b.shape = b_dimensions
     c_expected = np.matmul(a, b)
-    for i in range(0, len(c)):
-        for j in range(0, len(c[i])):
-            assert(c[i][j] == c_expected[i][j])
+    precision = interval(c, c_expected)
+    if precision[0] != 0 or precision[1] != 0:
+        print("Floating points differences: ", precision)
 
 
 if __name__ == "__main__":
