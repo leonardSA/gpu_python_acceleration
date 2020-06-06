@@ -1,9 +1,10 @@
 import pyopencl as ocl
 import numpy as np
 
-# N = int(1e6)         # Nb of elements in matrix
-# NCOL = int(1e3)      # Nb matrix columns
-# NLIN = int(1e3)      # Nb matrix lines
+A_NCOL = 1e2      # Nb matrix columns
+A_NLIN = 1e2      # Nb matrix lines
+B_NCOL = 1e3
+B_NLIN = 1e2
 
 
 def matrix_mult_program(context):
@@ -15,7 +16,14 @@ def matrix_mult_program(context):
                                   const unsigned int b_ncol) {
             int rows = get_global_id(0);    /* iterate over rows */
             int columns = get_global_id(1); /* then iterate over columns */
-            c[rows * b_ncol + columns] = 1;
+
+            /* compute value */
+            float value = 0;
+            for (unsigned int i = 0 ; i < a_ncol ; i++) {
+                value += a[rows * a_ncol + i] * b[i * b_ncol + columns];
+            }
+
+            c[rows * b_ncol + columns] = value;
         }
     """
     return ocl.Program(context, program_source).build()
@@ -23,6 +31,7 @@ def matrix_mult_program(context):
 
 def matrix_mult(a, b, c, a_dimensions, b_dimensions,
                 platform, devices, context, program, queue):
+    # TODO time transfer
     # define buffers
     a_buffer = ocl.Buffer(context, flags=ocl.mem_flags.READ_ONLY,
                           size=a.nbytes)
@@ -38,6 +47,8 @@ def matrix_mult(a, b, c, a_dimensions, b_dimensions,
     # running program
     kernel_arguments = (a_buffer, b_buffer, c_buffer,
                         a_dimensions[1], b_dimensions[1])
+
+    # TODO time computation
     program.matrix_mult(queue,
                         np.array([a_dimensions[0], b_dimensions[1]]),
                         None,
@@ -50,8 +61,8 @@ def matrix_mult(a, b, c, a_dimensions, b_dimensions,
 
 def main():
     # init matrixes as 1D arrays => opencl does not deal with 2D arrays
-    a_dimensions = (np.uint32(5), np.uint32(2))
-    b_dimensions = (np.uint32(2), np.uint32(6))
+    a_dimensions = (np.uint32(A_NLIN), np.uint32(A_NCOL))
+    b_dimensions = (np.uint32(B_NLIN), np.uint32(B_NCOL))
     assert(a_dimensions[1] == b_dimensions[0])
     a = np.random.rand(a_dimensions[0] * a_dimensions[1]).astype(np.float32)
     b = np.random.rand(b_dimensions[0] * b_dimensions[1]).astype(np.float32)
@@ -68,8 +79,14 @@ def main():
     matrix_mult(a, b, c, a_dimensions, b_dimensions,
                 platform, devices, context, program, queue)
     c.shape = (a_dimensions[0], b_dimensions[1])
-    for i in c:
-        print(i)
+
+    # verify output
+    a.shape = a_dimensions
+    b.shape = b_dimensions
+    c_expected = np.matmul(a, b)
+    for i in range(0, len(c)):
+        for j in range(0, len(c[i])):
+            assert(c[i][j] == c_expected[i][j])
 
 
 if __name__ == "__main__":
