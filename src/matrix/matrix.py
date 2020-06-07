@@ -57,12 +57,14 @@ def interval(a, b):
     low = 0
     high = 0
     for i in range(0, len(a)):
-        for j in range(0, len(a[i])):
-            diff = a[i][j] - b[i][j]
-            if diff > high:
-                high = diff
-            if diff < low:
-                low = diff
+        diff = a[i] - b[i]
+        diff_high = np.amax(diff)
+        diff_low = np.amin(diff)
+        if diff_high > high:
+            high = diff_high
+        if diff_low < low:
+            low = diff_low
+        del diff
     return (low, high)
 
 
