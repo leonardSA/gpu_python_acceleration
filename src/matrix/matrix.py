@@ -4,6 +4,9 @@ import time
 import argparse
 
 
+NAIVE_IMPLEMENTATION_SOURCE = "naive_implementation.cl"
+
+
 def positive_int(string):
     value = int(string)
     if value < 0:
@@ -68,26 +71,10 @@ def interval(a, b):
     return (low, high)
 
 
-def matrix_mult_program(context):
-    program_source = """
-        __kernel void matrix_mult(__global float *a,
-                                  __global float* b,
-                                  __global float* c,
-                                  const unsigned int a_ncol,
-                                  const unsigned int b_ncol) {
-            int rows = get_global_id(0);    /* iterate over rows */
-            int columns = get_global_id(1); /* then iterate over columns */
-
-            /* compute value */
-            float value = 0;
-            for (unsigned int i = 0 ; i < a_ncol ; i++) {
-                value += a[rows * a_ncol + i] * b[i * b_ncol + columns];
-            }
-
-            c[rows * b_ncol + columns] = value;
-        }
-    """
-    return ocl.Program(context, program_source).build()
+def read_program(context, filename):
+    with open(filename, "r") as f:
+        program = ocl.Program(context, f.read()).build()
+    return program
 
 
 def matrix_mult(a, b, c, a_dimensions, b_dimensions,
@@ -144,7 +131,7 @@ def main():
     platform = ocl.get_platforms()[0]
     devices = platform.get_devices()
     context = ocl.Context(devices=devices)
-    program = matrix_mult_program(context)
+    program = read_program(context, NAIVE_IMPLEMENTATION_SOURCE)
     queue = ocl.CommandQueue(context)
 
     # run program
