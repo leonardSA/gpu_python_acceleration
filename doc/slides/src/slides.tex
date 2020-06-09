@@ -1,0 +1,124 @@
+\documentclass[9pt]{beamer}
+
+\title{Accélération Python avec GPU}
+\author{Joseph Leonard Stephen Auguste}
+\usetheme{Goettingen}
+
+\input{../src/config.tex}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+\begin{frame}
+    \frametitle{Qu'est-ce qu'OpenCL?}
+    \say{OpenCL (Open Computing Language) est la combinaison d'une API 
+    et d'un langage de programmation dérivé du C, 
+    proposé comme un standard ouvert par le Khronos Group.}
+    \newline
+    \-- Wikipédia\pause{}
+    \vspace{20pt}
+    \newline
+    OpenCL permet:\pause{}
+    \begin{itemize}
+        \item Programmer sur GPU\pause{}
+        \item Parallélisation\pause{}:
+            \begin{itemize}
+                \item Parallélisation de tâches (task parallelism)
+                \item Parallélisation de données (data parallelism)
+            \end{itemize}
+    \end{itemize}\pause{}
+    \vspace{20pt}
+    Pour l'intégrer à Python on utilise le framework \textbf{PyOpenCL}.
+\end{frame}
+
+\section{Installations}
+\begin{frame}
+    \frametitle{Installation d'OpenCL}
+    Deux éléments sont nécessaires au fonctionnement d'OpenCL:\pause{}
+    \begin{itemize}
+        \item Les headers: c'est l'API qui est définie par Khronos Group\pause{}
+        \item Les runtimes: c'est l'implémentation qui est définie par le 
+            vendeur du GPU (Nvidia, AMD ou Intel)
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Installation des headers sous Linux}
+    Une ligne de commande:
+    \begin{lstlisting}
+       sudo apt install opencl-headers 
+    \end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+    \frametitle{Installation des runtimes Intel sous Linux}
+    Installation des \textit{compute runtime} de Intel (architecture AMD64):
+    \begin{lstlisting}
+    mkdir neo
+    cd neo
+    wget https://github.com/intel/compute-runtime/releases/download/19.14.12751/intel-gmmlib_19.1.1_amd64.deb
+    wget https://github.com/intel/compute-runtime/releases/download/19.14.12751/intel-igc-core_19.11.1622_amd64.deb
+    wget https://github.com/intel/compute-runtime/releases/download/19.14.12751/intel-igc-opencl_19.11.1622_amd64.deb
+    wget https://github.com/intel/compute-runtime/releases/download/19.14.12751/intel-opencl_19.14.12751_amd64.deb
+    wget https://github.com/intel/compute-runtime/releases/download/19.14.12751/intel-ocloc_19.14.12751_amd64.deb
+    sudo apt install ./*deb
+    \end{lstlisting}
+    \vspace{20pt}
+    \textbf{Attention:} ne pas copier coller le texte, aller chercher les 
+    paquets \href{https://github.com/intel/compute-runtime/releases}{ici}.
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Installation des runtimes Intel sous Linux}
+    L'archive à récupérer se trouve 
+    \href{https://software.intel.com/content/www/us/en/develop/articles/opencl-drivers.html}{ici} 
+    dans la section \say{Intel CPU Runtime for OpenCL}:
+    \begin{lstlisting}[language=sh]
+    tar -xvf l_opencl_p_18.1.0.015.tgz
+    cd l_opencl_p_18.1.0.015/rpm
+    # requires alien and libnuma1 - converts everything to deb packages
+    alien *.rpm
+    sudo apt install ./*deb
+    # makes directories for vendors
+    sudo mkdir -p /usr/lib/OpenCL/vendors/
+    sudo mv /opt/intel /usr/lib/OpenCL/vendors/
+    sudo cp /usr/lib/x86_64-linux-gnu/libOpenCL.so /usr/lib/OpenCL/vendors/intel/libOpenCL.so
+    # configure dynamic linking
+    sudo echo "/usr/lib/OpenCL/vendors/intel" > /etc/ld.so.conf.d/opencl-vendor-intel.conf
+    sudo ldconfig
+    \end{lstlisting}
+    \vspace{20pt}
+    \textbf{Attention:} les chemins ne seront pas forcément les mêmes.
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Installation alternative des runtimes Intel sous Linux}
+    Il est possible d'installer les runtimes en une ligne de commande:
+    \begin{lstlisting}[language=sh]
+    apt-get install beignet beignet-dev
+    \end{lstlisting}
+    \vspace{20pt}
+    \textbf{Attention:} Beignet n'est plus recommandé/maintenu par Intel 
+    (\href{https://software.intel.com/en-us/forums/opencl/topic/758168}{source}).
+    \newline
+    \textbf{Non testé par moi.}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Installation de PyOpenCL}
+    Prérequis:
+    \begin{itemize}
+        \item Python installé (de préférence Python3)
+        \item Pip installé (de préférence Pip3)
+    \end{itemize}
+    \vspace{20pt}
+    Installation en une ligne de commande:
+    \begin{lstlisting}[language=sh]
+        pip3 install pyopencl
+    \end{lstlisting}
+\end{frame}
+
+\end{document}
