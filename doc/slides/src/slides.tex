@@ -1,4 +1,4 @@
-\documentclass[9pt]{beamer}
+\documentclass[8pt]{beamer}
 
 \title{Accélération Python avec GPU}
 \author{Joseph Leonard Stephen Auguste}
@@ -25,8 +25,11 @@
         \item Programmer sur GPU\pause{}
         \item Parallélisation\pause{}:
             \begin{itemize}
-                \item Parallélisation de tâches (task parallelism)
-                \item Parallélisation de données (data parallelism)
+                \item Parallélisation de tâches (task parallelism): utile si on 
+                    cherche à exécuter des programmes différents en parallèle\pause{}
+                \item Parallélisation de données (data parallelism): utile si on 
+                    cherche à modifier différentes parties des données avec une 
+                    même opération
             \end{itemize}
     \end{itemize}\pause{}
     \vspace{20pt}
@@ -119,6 +122,108 @@
     \begin{lstlisting}[language=sh]
         pip3 install pyopencl
     \end{lstlisting}
+\end{frame}
+
+\section{OpenCL avec PyOpenCL}
+\begin{frame}[fragile]
+    \frametitle{Créer le contexte d'exécution}
+    Pour pouvoir exécuter des programmes OpenCL dit \textbf{Kernel} 
+    il faut d'abord choisir son support, créer son contexte d'exécution, 
+    le compiler (build) et enfin ajouter ce contexte à la file de commandes.
+    \begin{lstlisting}[language=Python]
+    import pyopencl as cl
+    # choose first platform 
+    platform = cl.get_platforms()[0]       
+    # retrive platform devices to create context
+    devices = platform.get_devices()        
+    # create context for platform
+    context = cl.Context(devices=devices)    
+    # add OpenCL source code to context (source is a string)
+    program_source = cl.Program(context, source)
+    # compile the kernel
+    program = program_source.build()
+    # enqueue the context => make the builded programs avaiable for execution
+    queue = cl.CommandQueue(context)
+    \end{lstlisting}
+\end{frame}
+
+\section{OpenCL avec PyOpenCL}
+\begin{frame}[fragile]
+    \frametitle{Création et copies de buffers}
+    Afin de pouvoir transférer des données au programme OpenCL il faut 
+    commencer par définir des buffers. 
+    \newline
+    \textbf{Attention:} le type est très important (d'où l'utilisation de la 
+    librarie numpy), il faut se référer à la documentation officielle.
+    \begin{lstlisting}[language=Python]
+    import numpy as np
+    import pyopencl as cl
+    # instantiate a numpy.ndarray of N elements of type float32 with random values
+    # floats are encoded in 32bits in OpenCL
+    array_in = np.random.rand(N).astype(np.float32)
+    # instantiate a similar numpy.ndarray but filled with zeros
+    array_out = np.zeros(N, dtype=float32)
+    # context is the one created in the previous slide
+    # create a read only buffer using array_in
+    buffer_in = cl.Buffer(context, flags=cl.mem_flags.READ_ONLY,
+                          size=array_in.nbytes)
+    # create a write only buffer using array_out
+    array_out = cl.Buffer(context, flags=cl.mem_flags.WRITE_ONLY,
+                          size=b.nbytes)
+    # copy array_in content onto GPU via buffer_in
+    # is_blocking flag set to True by default
+    cl.enqueue_copy(queue, src=array_in, dest=buffer_in)    
+    # ... imagine execution which fills buffer_out (detailed further in the slides) ...
+    # copy array_out content off GPU and onto host via buffer_out
+    cl.enqueue_copy(queue, src=buffer_out, dest=array_out)
+    \end{lstlisting}
+\end{frame}
+
+\section{OpenCL avec PyOpenCL}
+\begin{frame}[fragile]
+    \frametitle{Exécution d'un kernel}
+    L'exécution d'un Kernel se fait en appelant l'appelant sur la variable 
+    \textit{program} définie précedemment.
+    Disons ici que nous avons un Kernel du nom de \textit{inc} qui incrémente 
+    chaque élément d'un vecteur.
+    \begin{lstlisting}[language=Python]
+    # ...Buffer creations and copy onto GPU....
+    # Kernel function prototype: kernel void inc(global float * in, global float * out)
+    kernel_arguments = (buffer_in, buffer_out)
+    # run the program
+    program.inc(queue,                  # aforementioned queue
+                len(array_in),          # global memory
+                None,                   # local memory : None if not used
+                *kernel_arguments)
+    # ...Copy buffer off GPU...
+    \end{lstlisting}
+\end{frame}
+
+\section{OpenCL avec PyOpenCL}
+\begin{frame}[fragile]
+    \frametitle{Définition du Kernel}
+    Le Kernel est défini dans une chaîne de caractère 
+    (peut aussi être lu d'un fichier).
+    \begin{lstlisting}[language=python]
+    program_source = """
+        kernel void inc(global float * in, global float * out) {
+            int id = get_global_id(0);
+            out[id] = in[id] + 1;
+        }
+    """
+    \end{lstlisting}
+\end{frame}
+
+\section{OpenCL avec PyOpenCL}
+\begin{frame}
+    \frametitle{Notes (non négligeables)}
+    Les fonctions de PyOpenCL:\@ \textit{enqueue\_copy} et du genre \textit{program.inc}
+    retournent un objet de la classe pyopencl.Event. On peut appeller certaines méthodes
+    sur ces objets dont notamment \textit{wait()} qui permet d'attendre la fin de 
+    l'exécution de l'événement.
+    \vspace{20pt}
+    \newline
+    L'allocation dynamique ainsi que la récursivité \textbf{n'existent pas en OpenCL.}
 \end{frame}
 
 \end{document}
