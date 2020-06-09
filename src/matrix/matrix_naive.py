@@ -150,7 +150,8 @@ def main():
             print(end - start)
         if args.precision:
             precision = interval(c, c_expected)
-            print(precision)
+            print(precision[0])
+            print(precision[1])
 
 
 if __name__ == "__main__":
