@@ -147,7 +147,6 @@
     \end{lstlisting}
 \end{frame}
 
-\section{OpenCL avec PyOpenCL}
 \begin{frame}[fragile]
     \frametitle{Création et copies de buffers}
     Afin de pouvoir transférer des données au programme OpenCL il faut 
@@ -179,7 +178,6 @@
     \end{lstlisting}
 \end{frame}
 
-\section{OpenCL avec PyOpenCL}
 \begin{frame}[fragile]
     \frametitle{Exécution d'un kernel}
     L'exécution d'un Kernel se fait en appelant l'appelant sur la variable 
@@ -199,7 +197,6 @@
     \end{lstlisting}
 \end{frame}
 
-\section{OpenCL avec PyOpenCL}
 \begin{frame}[fragile]
     \frametitle{Définition du Kernel}
     Le Kernel est défini dans une chaîne de caractère 
@@ -214,7 +211,6 @@
     \end{lstlisting}
 \end{frame}
 
-\section{OpenCL avec PyOpenCL}
 \begin{frame}
     \frametitle{Notes (non négligeables)}
     Les fonctions de PyOpenCL:\@ \textit{enqueue\_copy} et du genre \textit{program.inc}
@@ -224,6 +220,128 @@
     \vspace{20pt}
     \newline
     L'allocation dynamique ainsi que la récursivité \textbf{n'existent pas en OpenCL.}
+    De plus, seuls les tableaux dit 1D peuvent êtres passés en paramètre au Kernel.
+\end{frame}
+
+\section{Multiplication de matrices}
+\begin{frame}[fragile]
+    \frametitle{Kernel}
+    On considère que l'on fait $a x b = c$ avec a, b et c des matrices.
+    \vspace{20pt}
+    \newline
+    Implémentation naïve de la multiplication de matrice. Le principe est 
+    qu'on itére sur les lignes et les colonnes de la matrice résultat c avec 
+    les ids globaux afin de calculer la valeur d'une case de c.
+    \begin{lstlisting}[language=c]
+    kernel void matrix_mult(global float *a,
+                            global float* b,
+                            global float* c,
+                            const unsigned int a_ncol,
+                            const unsigned int b_ncol) {
+        int rows = get_global_id(0);    /* iterate over rows */
+        int columns = get_global_id(1); /* then iterate over columns */
+
+        /* compute value */
+        float value = 0;
+        for (unsigned int i = 0 ; i < a_ncol ; i++) {
+            value += a[rows * a_ncol + i] * b[i * b_ncol + columns];
+        }
+
+        c[rows * b_ncol + columns] = value;
+    }
+    \end{lstlisting} 
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Lancement du programme en Python}
+    Afin de lancer le programme en Python on a préalablement défini des 
+    tableaux pour les matrices a, b et c. On a aussi déjà défini les éléments 
+    essentiels à OpenCL et compilé le Kernel.
+    On obtient alors le code suivant:
+    \begin{lstlisting}[language=python]
+    # define buffers
+    a_buffer = cl.Buffer(context, flags=cl.mem_flags.READ_ONLY, 
+                         size=a.nbytes)
+    b_buffer = cl.Buffer(context, flags=cl.mem_flags.READ_ONLY, 
+                         size=b.nbytes)
+    c_buffer = cl.Buffer(context, flags=cl.mem_flags.WRITE_ONLY, 
+                         size=c.nbytes)
+    # copy data into buffers
+    cl.enqueue_copy(queue, src=a, dest=a_buffer)
+    cl.enqueue_copy(queue, src=b, dest=b_buffer)
+    # define arguments
+    kernel_arguments = (a_buffer, b_buffer, c_buffer, a_nb_columns, b_nb_columns)
+    # run program and wait for complemention
+    program.matrix_mult(queue,
+                        np.array([a_nb_rows, b_nb_columns]),
+                        None,
+                        *kernel_arguments).wait()
+    # copy results onto host
+    cl.enqueue_copy(queue, src=c_buffer, dest=c)
+    \end{lstlisting} 
+\end{frame}
+
+\begin{frame}
+    \frametitle{Temps de transfert des buffers}
+    \begin{center}
+    \includegraphics[width=0.9\textwidth]{../resources/matrix_naive_buffer_transfer.pdf}
+    \end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Explication des temps de transfert des buffers}
+    On voit qu'ils évoluent de façon linéaire.
+
+    On observe cependant une augmentation en performances lorsque le nombre 
+    d'éléments atteint un certain seuil pour la copie du Host au GPU:\@
+    \begin{lstlisting}
+    2073600	0.009790897369384766	0.003491640090942383
+    2102500	0.0036971569061279297	0.0035674571990966797
+    2131600	0.003909587860107422	0.003559112548828125
+    2160900	0.003753185272216797	0.003653287887573242
+    \end{lstlisting}
+    \vspace{20pt}
+    Je ne sais pas pourquoi.
+\end{frame}
+
+\begin{frame}
+    \frametitle{Temps d'éxecution de la multiplication de matrices}
+    \begin{center}
+    \includegraphics[width=0.9\textwidth]{../resources/matrix_naive_execution_time.pdf}
+    \end{center}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Interprétation des temps d'éxecution}
+    On observe que notre multiplication de matrice évolue rapidement 
+    la complexité de l'algorithme utilisé étant $O(n^3)$.
+    \vspace{20pt}
+    \newline
+    On observe aussi notamment que l'implémentation de Numpy est beaucoup 
+    plus rapide. L'implémentation donnée est certainement sous-optimal car 
+    il y a trop d'accès concurrents sur la mémoire globale.
+    \vspace{20pt}
+    \newline
+    Enfin, on observe des piques de performances. Je ne sais pas pourquoi.
+\end{frame}
+
+\begin{frame}
+    \frametitle{Précisions sur les flottants}
+    \begin{center}
+    \includegraphics[width=0.9\textwidth]{../resources/matrix_naive_float_precision.pdf}
+    \end{center}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Interprétation de la disparité des résultats}
+    En comparant les résultats de Numpy.matmul et l'implémentation GPU on 
+    note que plus le nombre d'éléments est grand plus l'écart existant entre 
+    les résultats de l'un et de l'autre est grand. Cela s'explique par la 
+    perte de précision sur les calculs de flottants. Cependant, il n'est pas 
+    possible de savoir lequel des deux est le plus précis mais on se doute que 
+    le GPU à des résultats plus conformes au résultats théoriques.
 \end{frame}
 
 \end{document}
+
+%   matrix_naive_execution_time.pdf  matrix_naive_float_precision.pdf
