@@ -1,0 +1,9 @@
+#!/usr/bin/gnuplot
+set terminal svg
+set output "./FILENAME"
+set grid
+set ylabel "LABELY"
+set title "TITLE1"
+set xlabel "Number of elements in matrix"
+plot "DATAFILE" using 1:2 title 'TITLE2' with lines, \
+    "DATAFILE" using 1:3 title 'TITLE3' with lines

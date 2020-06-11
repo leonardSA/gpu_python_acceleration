@@ -63,3 +63,15 @@ Python 2.4 or newer and and OpenCL implementation
     - [intel.com](https://software.intel.com/content/www/us/en/develop/articles/opencl-drivers.html)
 
 ## 24/05:21:00: do the log and readme
+## 24/05:23:26: copy programs and tests them
+## 31/05:14:00: research on pyopencl dev
+## 31/05:16:38: copy some pyopencl for vectors example and understand how the code works
+## 31/05:17:37: create python exe with pyinstaller to optimize (did not optimize)
+## 31/05:18:00: search how to do matrix multiplications
+## 01/06:13:15: search how to implement matrix multiplications in pyopencl
+- learn about numpy ndarray class
+- write non pyopencl code for matrix multiplication to understand the principle
+## 02/06:10:00: implement matrix multiplications in pyopencl
+- understand how to iterate through a 2D array as a 1D array 
+- understand specificities of encoding sizes e.g. opencl requires 32 bit unsigned int
+- implement the code
