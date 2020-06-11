@@ -23,15 +23,15 @@ STOP=$5
 
 buffer_data="buffer_transfer.dat"
 execution_data="execution_time.dat"
-precision_data="float_precision.dat"
+accuracy_data="float_accuracy.dat"
 
 if [ -f $buffer_data ]; then rm $buffer_data ; fi
 if [ -f $execution_data ]; then rm $execution_data ; fi
-if [ -f $precision_data ]; then rm $precision_data ; fi
+if [ -f $accuracy_data ]; then rm $accuracy_data ; fi
 
 echo -e "# Matrix size (nxn)\tCopy host to gpu\tCopy gpu to host" >> $buffer_data
 echo -e "# Matrix size (nxn)\tGPU execution time\tNumpy matmul execution time" >> $execution_data
-echo -e "# Matrix size (nxn)\tLower bound diff\tHigher bound diff" >> $precision_data
+echo -e "# Matrix size (nxn)\tLower bound diff\tHigher bound diff" >> $accuracy_data
 
 # Generate data
 
@@ -43,24 +43,24 @@ for i in $(seq $START $STEP $STOP); do
     ARRAY=($output)
     echo -e "$matrix_nb_elements\t${ARRAY[0]}\t${ARRAY[2]}" >> $buffer_data
     echo -e "$matrix_nb_elements\t${ARRAY[1]}\t${ARRAY[3]}" >> $execution_data
-    echo -e "$matrix_nb_elements\t${ARRAY[4]}\t${ARRAY[5]}" >> $precision_data
+    echo -e "$matrix_nb_elements\t${ARRAY[4]}\t${ARRAY[5]}" >> $accuracy_data
 done
 
 # Create plot scripts
 
 gnuplot_plot_buffer=${buffer_data%.*}".plot"
 gnuplot_plot_execution=${execution_data%.*}".plot"
-gnuplot_plot_precision=${precision_data%.*}".plot"
+gnuplot_plot_accuracy=${accuracy_data%.*}".plot"
 
 if [ -f $gnuplot_plot_buffer ]; then rm $gnuplot_plot_buffer ; fi
 if [ -f $gnuplot_plot_execution ]; then rm $gnuplot_plot_execution ; fi
-if [ -f $gnuplot_plot_precision ]; then rm $gnuplot_plot_precision ; fi
+if [ -f $gnuplot_plot_accuracy ]; then rm $gnuplot_plot_accuracy ; fi
 
 cp gnuplot_plot_canvas $gnuplot_plot_buffer 
 cp gnuplot_plot_canvas $gnuplot_plot_execution
-cp gnuplot_plot_canvas $gnuplot_plot_precision
+cp gnuplot_plot_canvas $gnuplot_plot_accuracy
 
-chmod a+x $gnuplot_plot_buffer $gnuplot_plot_execution $gnuplot_plot_precision
+chmod a+x $gnuplot_plot_buffer $gnuplot_plot_execution $gnuplot_plot_accuracy
 
 # Plot data
 
@@ -86,16 +86,16 @@ sed -i "s/LABELY/Time in seconds/g" $gnuplot_plot_execution
 
 ./$gnuplot_plot_execution
 
-# Plot precision
+# Plot accuracy
 
-sed -i "s/DATAFILE/$precision_data/g" $gnuplot_plot_precision
-sed -i "s/FILENAME/${precision_data%.*}.svg/g" $gnuplot_plot_precision
-sed -i "s/TITLE1/Precision differences between matrices/g" $gnuplot_plot_precision
-sed -i "s/TITLE2/Precision lower bound/g" $gnuplot_plot_precision
-sed -i "s/TITLE3/Precision higher bound/g" $gnuplot_plot_precision
-sed -i "s/LABELY/ /g" $gnuplot_plot_precision
+sed -i "s/DATAFILE/$accuracy_data/g" $gnuplot_plot_accuracy
+sed -i "s/FILENAME/${accuracy_data%.*}.svg/g" $gnuplot_plot_accuracy
+sed -i "s/TITLE1/accuracy differences between matrices/g" $gnuplot_plot_accuracy
+sed -i "s/TITLE2/accuracy lower bound/g" $gnuplot_plot_accuracy
+sed -i "s/TITLE3/accuracy higher bound/g" $gnuplot_plot_accuracy
+sed -i "s/LABELY/ /g" $gnuplot_plot_accuracy
 
-./$gnuplot_plot_precision
+./$gnuplot_plot_accuracy
 
 # Clean up
 # rm *.plot
