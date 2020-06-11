@@ -1,9 +1,10 @@
 MATRIX_SRC_DIR=matrix
-MATRIX_NAIVE_SRC=matrix_naive.py
-MATRIX_NAIVE_CL_SRC=naive_implementation.cl
+MATRIX_MAIN_SRC=main.py
+MATRIX_CLASS_SRC=matrixmultiplication.py
 
 OUT_DIR=../output
 
-matrix-naive-graphs:
-	cp $(MATRIX_SRC_DIR)/$(MATRIX_NAIVE_SRC) \
-		$(MATRIX_SRC_DIR)/$(MATRIX_NAIVE_CL_SRC) $(OUT_DIR)
+matrix-graphs:
+	cp $(MATRIX_SRC_DIR)/$(MATRIX_CLASS_SRC) \
+		$(MATRIX_SRC_DIR)/$(MATRIX_MAIN_SRC) \
+		$(MATRIX_SRC_DIR)/*.cl $(OUT_DIR)
