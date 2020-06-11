@@ -7,13 +7,12 @@ fi
 
 PY_VERSION=$1
 EXEC=$2
-EXEC_FNAME=${EXEC%.*}
 
 # Create data files
 
-buffer_data=$EXEC_FNAME"_buffer_transfer.dat"
-execution_data=$EXEC_FNAME"_execution_time.dat"
-precision_data=$EXEC_FNAME"_float_precision.dat"
+buffer_data="buffer_transfer.dat"
+execution_data="execution_time.dat"
+precision_data="float_precision.dat"
 
 if [ -f $buffer_data ]; then rm $buffer_data ; fi
 if [ -f $execution_data ]; then rm $execution_data ; fi
