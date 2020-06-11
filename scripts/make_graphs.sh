@@ -1,12 +1,23 @@
 #!/usr/bin/env bash
 
-if [ $# -ne 2 ]; then
-    echo "USAGE: $0 python3.XX executable"
+if [ $# -ne 5 ]; then
+    echo -e "USAGE:\t$0 python3.XX executable start step stop"
+    echo -e "ARGUMENTS:"
+    echo -e "\tpython3.XX:\tpython interpreter"
+    echo -e "\texecutable:\tpython code to execute with the interpreter"
+    echo -e "\tstart:\t\tstart size of matrices such as AxB=C with A of shape" \
+        "(start, start) and B of shape (start, start)"
+    echo -e "\tstep:\t\tstarting size increments with step"
+    echo -e "\tstop:\t\tend size of matrices such as AxB=C with A of shape" \
+        "(stop, stop) and B of shape (stop, stop)"
     exit 1
 fi
 
 PY_VERSION=$1
 EXEC=$2
+START=$3
+STEP=$4
+STOP=$5
 
 # Create data files
 
@@ -24,7 +35,7 @@ echo -e "# Matrix size (nxn)\tLower bound diff\tHigher bound diff" >> $precision
 
 # Generate data
 
-for i in $(seq 10 10 1500); do
+for i in $(seq $START $STEP $STOP); do
     echo "Executing $PY_VERSION $EXEC $i $i $i $i -t -p -n"
     output=$($PY_VERSION $EXEC $i $i $i $i -t -p -n)
     matrix_nb_elements=$(( i * i ))
