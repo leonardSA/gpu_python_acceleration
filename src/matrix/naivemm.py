@@ -10,7 +10,7 @@ CL_INT32_IMPLEMENTATION = "naive_integer_implementation.cl"
 CL_FLOAT32_IMPLEMENTATION = "naive_float_implementation.cl"
 
 
-class NaiveMatrixMultiplication:
+class MatrixMultiplication:
 
     a = None
     b = None
