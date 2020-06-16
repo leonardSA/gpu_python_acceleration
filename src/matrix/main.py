@@ -2,7 +2,7 @@ import time
 import argparse
 import numpy as np
 import pyopencl as cl
-import matrixmultiplication as mm
+import naive as nmm
 
 
 def positive_int(string):
@@ -91,13 +91,13 @@ def main():
     cl_items['queue'] = cl.CommandQueue(cl_items['context'])
 
                                 # dict with opencl configuration
-    m = mm.MatrixMultiplication(cl_items,
-                                # dimensions of A
-                                (args.A_ROWS, args.A_COLUMNS),
-                                # dimensions of B
-                                (args.B_ROWS, args.B_COLUMNS),
-                                # data type used
-                                np.float32)
+    m = nmm.MatrixMultiplication(cl_items,
+                                 # dimensions of A
+                                 (args.A_ROWS, args.A_COLUMNS),
+                                 # dimensions of B
+                                 (args.B_ROWS, args.B_COLUMNS),
+                                 #data type used
+                                 np.float32)
 
     m.compute()
 
