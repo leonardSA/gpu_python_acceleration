@@ -1,6 +1,9 @@
 # Output
 output
 
+# Python
+__pycache__
+
 # Python virtual environment directory
 .environment
 
