@@ -1,0 +1,133 @@
+\section{OpenCL et PyOpenCL}\label{sec:pyopencl}
+
+Cette section est basée sur la documentation de \texttt{PyOpenCL} \autocite{pyopencl}.
+
+\subsection{Installation de PyOpenCL}
+Pour installer \texttt{PyOpenCL} sous \texttt{Linux} il suffit d'entrer dans 
+le terminal la commande suivante:
+\begin{lstlisting}[language=sh]
+    pip3 install pyopencl  
+\end{lstlisting}
+
+
+\subsection{Utilisation de PyOpenCL}
+
+\subsubsection{Les types}
+
+Afin de pouvoir respecter les types demandés par \texttt{OpenCL}, il faut 
+utliser \texttt{Numpy} qui nous permet de choisir un type et un encodage spécifique 
+e.g.\ le type float d'\texttt{OpenCL} requiert un encodage sur 32 bits, ainsi 
+on utilise le type \texttt{numpy.float32}.
+
+\subsubsection{Instantiation des composants GPU}
+
+\texttt{OpenCL} étant intrinsèquement lié au matériel, il faut commencer par choisir 
+le GPU sur lequel exécuter le code et instantier son contexte et sa queue 
+de commande.
+
+\begin{lstlisting}[language=python]
+    import pyopencl as cl
+    import numpy as np
+    # choose the first platform 
+    platform = cl.get_platforms()[0]       
+    # retrieve platform devices to create context
+    devices = platform.get_devices()        
+    # create context for platform
+    context = cl.Context(devices=devices)    
+    # enqueue the context to make the builded programs avaiable for execution
+    queue = cl.CommandQueue(context)
+    ...
+\end{lstlisting}
+
+\subsubsection{Compilation du Kernel}
+
+Il faut commencer par définir le code source du Kernel qu'on stocke dans une 
+chaîne de caratères. Ensuite on crée un objet de la classe 
+\texttt{pyopencl.Program} en utilisant le contexte précédemment défini. Puis 
+avec la méthode \texttt{build} on compile l'exécutable de façon a récupérer 
+de programme. 
+\newline
+\newline
+\noindent{On considère le code source du Kernel qui ne fait 
+qu'incrémenter chaque élément:}
+\begin{lstlisting}[language=python]
+program_source = """
+    kernel void inc(global float * in, global float * out) {
+        int id = get_global_id(0);
+        out[id] = in[id] + 1;
+    }
+"""
+\end{lstlisting}
+\vspace{10pt}
+
+\noindent{On le compile ainsi:}
+\begin{lstlisting}
+    ...
+    # add OpenCL source code to context (source is a string)
+    program_source = cl.Program(context, source)
+    # compile the kernel
+    program = program_source.build()
+    ...
+\end{lstlisting}
+
+\subsubsection{Définitions des buffers}
+
+On commence par définir des tableaux qui stocke nos valeurs en faisant 
+attention à l'encodage. Il en faut aussi un pour le résultat.
+Ensuite, à l'aide de ces derniers, on définit des \textit{buffers} du type 
+\texttt{pyopencl.Buffer}. En général, on les définira uniquement avec 
+les \textit{flags} \texttt{pyopencl.mem\_flags.READ\_ONLY} ou 
+\texttt{pyopencl.mem\_flags.WRITE\_ONLY} par soucis de clarité et aussi car des 
+optimisations peuvent êtres faites par le compilateur.
+On copie ensuite les buffers entrants sur le GPU afin de pouvoir passer les 
+arguments au Kernel à l'aide de la méthode \texttt{pyopencl.enqueue\_copy}. 
+Il faut noter que la copie est bloquante par défaut et qu'il faut rajouter le 
+paramètre positionnel \texttt{is\_blocking=False} pour le désactiver.
+
+\begin{lstlisting}[language=Python]
+...
+# instantiate a numpy.ndarray of N elements of type float32 with random values
+array_in = np.random.rand(N).astype(np.float32)
+# instantiate a similar numpy.ndarray but filled with zeros
+array_out = np.zeros(N, dtype=float32)
+# create a read only buffer using array_in
+buffer_in = cl.Buffer(context, flags=cl.mem_flags.READ_ONLY,
+                      size=array_in.nbytes)
+# create a write only buffer using array_out
+array_out = cl.Buffer(context, flags=cl.mem_flags.WRITE_ONLY,
+                      size=b.nbytes)
+# copy array_in content onto GPU via buffer_in
+# is_blocking flag set to True by default
+cl.enqueue_copy(queue, src=array_in, dest=buffer_in)    
+...
+\end{lstlisting}
+
+
+\subsubsection{Exécution du Kernel}\label{sec:execution_kernel}
+
+On définit alors un tuple des arguments avec nos \textit{buffers}.
+Ensuite pour exécuter le Kernel, il suffit d'appeller la fonction
+définie dans le code source. Cependant, plus de paramètres que le tuple sont 
+à lui passer:
+\begin{itemize}
+    \item \textbf{queue:} la queue de commande
+    \item \textbf{global memory:} le \textit{global NDRange}
+    \item \textbf{local memory:} le \textit{local NDRange}
+    \item \textbf{kernel arguments:} le tuple des arguments préfixé d'un 
+        astérique afin de déballer ces derniers
+\end{itemize}
+Enfin, pour récupérer le résultat on copie le contenu du \textit{buffer} de 
+sortie dans notre tableau résultat.
+
+\begin{lstlisting}[language=python]
+    ...
+    # Kernel function prototype: kernel void inc(global float * in, global float * out)
+    kernel_arguments = (buffer_in, buffer_out)
+    # run the program
+    program.inc(queue,                  
+                len(array_in),          # global memory 
+                None,                   # local memory
+                *kernel_arguments)
+    # copy array_out content off GPU and onto host via buffer_out
+    cl.enqueue_copy(queue, src=buffer_out, dest=array_out)
+\end{lstlisting}
