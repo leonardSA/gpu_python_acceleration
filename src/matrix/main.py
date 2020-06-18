@@ -76,6 +76,10 @@ def args_parse():
                         help="""
                         Prints out time measurements for numpy.matmul
                         """)
+    parser.add_argument('-v', "--verbose", action="store_true",
+                        help="""
+                        Adds text with the measures.
+                        """)
     parser.add_argument("--naive", action="store_true",
                         help="""
                         Use the naive implementation.
@@ -111,19 +115,31 @@ def main():
     m.compute()
 
     if args.time:
+        if args.verbose:
+            print("Buffer copy time onto GPU:", end=" ")
         print(m.time_buffer_to_GPU)
+        if args.verbose:
+            print("Matrix multiplication execution time:", end=" ")
         print(m.time_execution)
+        if args.verbose:
+            print("Buffer copy time off GPU:", end=" ")
         print(m.time_buffer_from_GPU)
 
     if args.time_numpy_matmul:
         start = time.time()
         np.matmul(m.a, m.b)
         end = time.time()
+        if args.verbose:
+            print("Numpy matrix multiplication execution time:", end=" ")
         print(end - start)
 
     if args.accuracy:
         accuracy = m.accuracy()
+        if args.verbose:
+            print("Accuracy lower bound:", end=" ")
         print(accuracy[0])
+        if args.verbose:
+            print("Accuracy higher bound:", end=" ")
         print(accuracy[1])
 
 
