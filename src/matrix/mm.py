@@ -8,7 +8,7 @@ HIGH = int(1e6)
 
 CL_FLOAT32_IMPLEMENTATION = "non_naive_float_implementation.cl"
 
-N_WORK_GROUPS = 32
+N_WORK_GROUPS = 32  # Set to 32 because we have 32 compute units
 
 
 class MatrixMultiplication:
@@ -221,6 +221,9 @@ class MatrixMultiplication:
         return x
 
     def __matrix_resize_with_zeros(self, m, n):
+        """
+        Pads a matrix with zeroes to obtain a matrix of dimensions n x n.
+        """
         m = np.hstack((m, np.zeros((m.shape[0], n - m.shape[1]),
                                    dtype=np.float32)))
         m = np.vstack((m, np.zeros((n - m.shape[0], m.shape[1]),
@@ -228,12 +231,19 @@ class MatrixMultiplication:
         return m
 
     def __matrices_resize_power_of_two(self):
+        """
+        Pads a, b and c with zeroes and set __ncol_nbytes.
+        """
         self.a = self.__matrix_resize_with_zeros(self.a, self.__ncol)
         self.b = self.__matrix_resize_with_zeros(self.b, self.__ncol)
         self.c = self.__matrix_resize_with_zeros(self.c, self.__ncol)
         self.__ncol_nbytes = self.a[0].nbytes
 
     def __matrices_resize_original_dimensions(self):
+        """
+        Resizes the matrix to its original dimensions by removing
+        the extra columns and rows.
+        """
         self.a.shape = (self.__ncol, self.__ncol)
         self.b.shape = (self.__ncol, self.__ncol)
         self.c.shape = (self.__ncol, self.__ncol)
