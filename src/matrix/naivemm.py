@@ -130,7 +130,7 @@ class MatrixMultiplication:
         else:
             msg = "Unsupported type: {}".format(self.dtype)
             raise TypeError(msg)
-        self.c = np.zeros(self.a_dim[1] * self.b_dim[0], dtype=self.dtype)
+        self.c = np.zeros(self.a_dim[0] * self.b_dim[1], dtype=self.dtype)
 
     def __init_program(self):
         """
