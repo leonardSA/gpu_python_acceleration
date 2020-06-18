@@ -9,6 +9,7 @@ PY_ENV_DIR=.environment
 SRC_DIR=src
 MATRIX_NAIVE_SRC=main.py
 
+DOC_DIR=doc
 OUT_DIR=output
 
 environment-setup:
@@ -20,8 +21,13 @@ graphs: output
 	cd $(OUT_DIR) ; ./$(MAKE_GRAPHS_SCRIPT) $(PY_VER) $(MATRIX_NAIVE_SRC) 30 10 1500
 	cd $(OUT_DIR) ; ./$(MAKE_GRAPHS_SCRIPT) $(PY_VER) $(MATRIX_NAIVE_SRC) 30 10 1500 naive
 
+.PHONY: doc
+doc:
+	make -C $(DOC_DIR)
+
 output:
 	if [ ! -d $(OUT_DIR) ]; then mkdir $(OUT_DIR); fi
 
 clean:
+	make clean -C $(DOC_DIR)
 	rm -rf $(OUT_DIR)
