@@ -17,7 +17,8 @@ environment-setup:
 graphs: output
 	make matrix-graphs -C $(SRC_DIR)
 	make matrix-graphs -C $(SCRIPTS_DIR)
-	cd $(OUT_DIR) ; ./$(MAKE_GRAPHS_SCRIPT) $(PY_VER) $(MATRIX_NAIVE_SRC) 10 10 2000
+	cd $(OUT_DIR) ; ./$(MAKE_GRAPHS_SCRIPT) $(PY_VER) $(MATRIX_NAIVE_SRC) 30 10 1500
+	cd $(OUT_DIR) ; ./$(MAKE_GRAPHS_SCRIPT) $(PY_VER) $(MATRIX_NAIVE_SRC) 30 10 1500 naive
 
 output:
 	if [ ! -d $(OUT_DIR) ]; then mkdir $(OUT_DIR); fi

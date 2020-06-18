@@ -2,7 +2,8 @@ import time
 import argparse
 import numpy as np
 import pyopencl as cl
-import matrixmultiplication as mm
+import naivemm as nmm
+import mm
 
 
 def positive_int(string):
@@ -65,7 +66,6 @@ def args_parse():
                         copying buffers onto GPU, GPU computing time,
                         copying buffers off GPU
                         """)
-    # TODO p -> a
     parser.add_argument('-p', "--accuracy", action="store_true",
                         help="""
                         Measure floating point computed differences between
@@ -75,6 +75,10 @@ def args_parse():
     parser.add_argument('-n', "--time-numpy-matmul", action="store_true",
                         help="""
                         Prints out time measurements for numpy.matmul
+                        """)
+    parser.add_argument("--naive", action="store_true",
+                        help="""
+                        Use the naive implementation.
                         """)
     args = parser.parse_args()
     matmul_possible(args.A_COLUMNS, args.B_ROWS)
@@ -90,15 +94,20 @@ def main():
     cl_items['context'] = cl.Context(devices=cl_items['devices'])
     cl_items['queue'] = cl.CommandQueue(cl_items['context'])
 
-                                # dict with opencl configuration
-    m = mm.MatrixMultiplication(cl_items,
-                                # dimensions of A
-                                (args.A_ROWS, args.A_COLUMNS),
-                                # dimensions of B
-                                (args.B_ROWS, args.B_COLUMNS),
-                                # data type used
-                                np.float32)
-
+    if args.naive:
+                                     # dict with opencl configuration
+        m = nmm.MatrixMultiplication(cl_items,
+                                     # dimensions of A
+                                     (args.A_ROWS, args.A_COLUMNS),
+                                     # dimensions of B
+                                     (args.B_ROWS, args.B_COLUMNS),
+                                     # data type used
+                                     np.float32)
+    else:
+        m = mm.MatrixMultiplication(cl_items,
+                                    (args.A_ROWS, args.A_COLUMNS),
+                                    (args.B_ROWS, args.B_COLUMNS),
+                                    np.float32)
     m.compute()
 
     if args.time:

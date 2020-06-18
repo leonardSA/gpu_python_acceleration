@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-if [ $# -ne 5 ]; then
-    echo -e "USAGE:\t$0 python3.XX executable start step stop"
+if [ $# -ne 5 ] && [ $# -ne 6 ]; then
+    echo -e "USAGE:\t$0 python3.XX executable start step stop [naive]"
     echo -e "ARGUMENTS:"
     echo -e "\tpython3.XX:\tpython interpreter"
     echo -e "\texecutable:\tpython code to execute with the interpreter"
@@ -10,6 +10,7 @@ if [ $# -ne 5 ]; then
     echo -e "\tstep:\t\tstarting size increments with step"
     echo -e "\tstop:\t\tend size of matrices such as AxB=C with A of shape" \
         "(stop, stop) and B of shape (stop, stop)"
+    echo -e "\tnaive:\t\tuse naive implementation"
     exit 1
 fi
 
@@ -18,12 +19,22 @@ EXEC=$2
 START=$3
 STEP=$4
 STOP=$5
+if [[ $6 != "" ]]; then
+    NAIVE_ARG="--naive"
+    NAIVE="naive"
+fi
 
 # Create data files
 
 buffer_data="buffer_transfer.dat"
 execution_data="execution_time.dat"
 accuracy_data="float_accuracy.dat"
+
+if [[ $NAIVE != "" ]]; then
+    buffer_data=$NAIVE"_"$buffer_data
+    execution_data=$NAIVE"_"$execution_data
+    accuracy_data=$NAIVE"_"$accuracy_data
+fi
 
 if [ -f $buffer_data ]; then rm $buffer_data ; fi
 if [ -f $execution_data ]; then rm $execution_data ; fi
@@ -36,8 +47,9 @@ echo -e "# Matrix size (nxn)\tLower bound diff\tHigher bound diff" >> $accuracy_
 # Generate data
 
 for i in $(seq $START $STEP $STOP); do
-    echo "Executing $PY_VERSION $EXEC $i $i $i $i -t -p -n"
-    output=$($PY_VERSION $EXEC $i $i $i $i -t -p -n)
+    cmd="$PY_VERSION $EXEC $i $i $i $i -t -p -n $NAIVE_ARG"
+    echo "Executing $cmd"
+    output=$($cmd)
     matrix_nb_elements=$(( i * i ))
     declare -a ARRAY
     ARRAY=($output)
@@ -90,9 +102,9 @@ sed -i "s/LABELY/Time in seconds/g" $gnuplot_plot_execution
 
 sed -i "s/DATAFILE/$accuracy_data/g" $gnuplot_plot_accuracy
 sed -i "s/FILENAME/${accuracy_data%.*}.svg/g" $gnuplot_plot_accuracy
-sed -i "s/TITLE1/accuracy differences between matrices/g" $gnuplot_plot_accuracy
-sed -i "s/TITLE2/accuracy lower bound/g" $gnuplot_plot_accuracy
-sed -i "s/TITLE3/accuracy higher bound/g" $gnuplot_plot_accuracy
+sed -i "s/TITLE1/Accuracy differences between matrices/g" $gnuplot_plot_accuracy
+sed -i "s/TITLE2/Accuracy lower bound/g" $gnuplot_plot_accuracy
+sed -i "s/TITLE3/Accuracy higher bound/g" $gnuplot_plot_accuracy
 sed -i "s/LABELY/ /g" $gnuplot_plot_accuracy
 
 ./$gnuplot_plot_accuracy
