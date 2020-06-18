@@ -1,0 +1,51 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage{blindtext}
+
+\input{config.tex}
+
+\title{Accélération Python avec GPU\\
+\large Rapport de TAL}
+\author{Joseph Leonard Stephen Auguste}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\newpage
+\input{0_introduction.tex}
+
+\newpage
+\input{1_gpu_architectures_opencl.tex}
+
+\newpage
+\input{2_opencl_pyopencl.tex}
+
+\newpage
+\input{3_matrixmultiplication.tex}
+
+\newpage
+\input{4_conclusion.tex}
+
+\newpage
+\printbibliography{}
+
+\newpage
+\begin{appendices}
+    \section{Graphes de la l'implémentation naïve de la Section~\ref{sec:matrixmultiplication}}
+    \includegraphics[width=\textwidth]{../../resources/matrix_naive_buffer_transfer.png}
+    \newpage
+    \includegraphics[width=\textwidth]{../../resources/matrix_naive_execution_time.png}
+    \newpage
+    \includegraphics[width=\textwidth]{../../resources/matrix_naive_float_precision.png}
+    \newpage
+    \includegraphics[width=\textwidth]{../../resources/naive_integer_accuracy.png}
+    \section{Graphes de la l'implémentation non naïve de la Section~\ref{sec:matrixmultiplication}}
+    \includegraphics[width=\textwidth]{../../resources/buffer_transfer.png}
+    \newpage
+    \includegraphics[width=\textwidth]{../../resources/execution_time.png}
+    \newpage
+    \includegraphics[width=\textwidth]{../../resources/float_accuracy.png}
+\end{appendices}
+
+\end{document}

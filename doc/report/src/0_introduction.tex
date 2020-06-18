@@ -1,0 +1,24 @@
+\section{Introduction}
+
+Ce document présente l'emploie d'\texttt{OpenCL} et du \textit{framework} 
+\texttt{PyOpenCL}. Son but est de montrer comment il est possible de cibler
+le GPU \textit{(Graphics Processing Unit)} pour obtenir une exécution parallèle 
+avec Python dans le but d'optimiser certaines parties du code.
+
+``\texttt{OpenCL} \textit{(Open Computing Language)} est la combinaison d’une API et d’un
+langage de programmation dérivé du \texttt{C}, proposé comme un standard ouvert
+par le \texttt{Khronos Group}.''\autocite{wikiopencl}. Il permet d'implémenter des 
+algorithmes sur les GPU et est donc conçu pour faire du code parallèle.
+
+Quant à \texttt{PyOpenCL}, 
+c'est un \textit{framework} qui permet d'intégrer du code \textit{OpenCL} à
+du \texttt{Python}. C'est un projet similaire à \texttt{PyCUDA} mais il a la 
+particularité de ne pas être limité aux GPU \texttt{Nvidia}.
+C'est aussi un projet 
+\href{https://github.com/inducer/pyopencl}{\textit{open source}}.
+
+On présentera donc d'abord les différentes architectures GPU existantes et \texttt{OpenCL}.
+Puis on verra l'utilisation de \texttt{PyOpenCL}. Enfin, on montrera un exemple de développement 
+de code \texttt{Python} et \texttt{OpenCL} pour la multiplication de matrices.
+
+L'ensemble du code est disponible au lien suivant: \url{https://github.com/leonardSA/gpu\_python\_acceleration/}.
